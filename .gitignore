@@ -1,0 +1,53 @@
+###> symfony/framework-bundle ###
+/.env.local
+/.env.*.local
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> symfony/webpack-encore-bundle ###
+/node_modules/
+/public/build/
+npm-debug.log
+yarn-error.log
+###< symfony/webpack-encore-bundle ###
+
+###> symfony/phpunit-bridge ###
+/phpunit.xml
+.phpunit.result.cache
+/phpunit.xml.dist
+###< symfony/phpunit-bridge ###
+
+###> VS Code ###
+.vscode/
+*.code-workspace
+###< VS Code ###
+
+###> DBeaver ###
+.dbeaver/
+*.dbeaver-data-sources.xml.bak
+###< DBeaver ###
+
+###> Ubuntu ###
+.directory
+*~
+###< Ubuntu ###
+
+###> Composer ###
+composer.lock
+###< Composer ###
+
+###> Environment ###
+.env
+.env.test
+###< Environment ###
+
+###> Logs ###
+*.log
+###< Logs ###
+
+###> PHP ###
+.php-cs-fixer.cache
+.php_cs.cache
+###< PHP ###

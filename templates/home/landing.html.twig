@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}TournamentFlow | Torneos claros y rapidos{% endblock %}
+
+{% block body %}
+<div class="card">
+    <h1 class="title">Organiza torneos 1v1 sin friccion.</h1>
+    <p class="subtitle">
+        Crea brackets de 4, 8, 16 o 32 jugadores, controla estados y registra resultados.
+        La base esta lista para suizo y round robin cuando tu negocio lo necesite.
+    </p>
+    <div class="form-grid" style="grid-auto-flow: row;">
+        <a class="button primary" href="{{ path('app_register') }}">Crear cuenta</a>
+        <a class="button ghost" href="{{ path('app_login') }}">Ya tengo cuenta</a>
+    </div>
+</div>
+{% endblock %}

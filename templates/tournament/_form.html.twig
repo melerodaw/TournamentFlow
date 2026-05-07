@@ -1,0 +1,39 @@
+{{ form_start(form, { attr: { class: 'form-grid' } }) }}
+    <div class="form-field">
+        {{ form_label(form.name) }}
+        {{ form_widget(form.name) }}
+        {{ form_errors(form.name) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.description) }}
+        {{ form_widget(form.description) }}
+        {{ form_errors(form.description) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.game) }}
+        {{ form_widget(form.game) }}
+        {{ form_errors(form.game) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.format) }}
+        {{ form_widget(form.format) }}
+        {{ form_errors(form.format) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.status) }}
+        {{ form_widget(form.status) }}
+        {{ form_errors(form.status) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.maxParticipants) }}
+        {{ form_widget(form.maxParticipants) }}
+        {{ form_errors(form.maxParticipants) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.startAt) }}
+        {{ form_widget(form.startAt) }}
+        {{ form_errors(form.startAt) }}
+    </div>
+
+    <button class="button primary" type="submit">{{ button_label|default('Guardar') }}</button>
+{{ form_end(form) }}

@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Juegos | TournamentFlow{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <div class="list-header">
+            <div>
+                <h1 class="title">Juegos</h1>
+                <p class="subtitle">Define el catalogo de juegos disponibles.</p>
+            </div>
+            <a class="button primary" href="{{ path('app_game_new') }}">Agregar juego</a>
+        </div>
+
+        {% if games is empty %}
+            <p class="subtitle">Aun no hay juegos cargados.</p>
+        {% else %}
+            <div class="list">
+                {% for game in games %}
+                    <a class="list-item" href="{{ path('app_game_show', {'id': game.id}) }}">
+                        <div>
+                            <div class="list-title">{{ game.name }}</div>
+                            <div class="meta">{{ game.imageUrl ?: 'Sin imagen' }}</div>
+                        </div>
+                        <span class="chip">Editar</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

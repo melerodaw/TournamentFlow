@@ -1,0 +1,14 @@
+{{ form_start(form, { attr: { class: 'form-grid' } }) }}
+    <div class="form-field">
+        {{ form_label(form.name) }}
+        {{ form_widget(form.name) }}
+        {{ form_errors(form.name) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.imageUrl) }}
+        {{ form_widget(form.imageUrl) }}
+        {{ form_errors(form.imageUrl) }}
+    </div>
+
+    <button class="button primary" type="submit">{{ button_label|default('Guardar') }}</button>
+{{ form_end(form) }}

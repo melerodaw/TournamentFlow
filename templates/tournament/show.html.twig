@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Detalle de torneo | TournamentFlow{% endblock %}
+
+{% block body %}
+    {% set format_labels = {
+        'single_elim': 'Eliminacion simple',
+        'swiss': 'Suizo',
+        'round_robin': 'Round robin'
+    } %}
+    {% set status_labels = {
+        'draft': 'Borrador',
+        'open': 'Abierto',
+        'running': 'En curso',
+        'completed': 'Finalizado',
+        'canceled': 'Cancelado'
+    } %}
+
+    <div class="card">
+        <h1 class="title">{{ tournament.name }}</h1>
+        <p class="subtitle">{{ tournament.description ?: 'Sin descripcion.' }}</p>
+
+        <div class="list">
+            <div class="list-item">
+                <div>
+                    <div class="list-title">Formato</div>
+                    <div class="meta">{{ format_labels[tournament.format]|default(tournament.format) }}</div>
+                </div>
+            </div>
+            <div class="list-item">
+                <div>
+                    <div class="list-title">Estado</div>
+                    <div class="meta">{{ status_labels[tournament.status]|default(tournament.status) }}</div>
+                </div>
+            </div>
+            <div class="list-item">
+                <div>
+                    <div class="list-title">Cupo</div>
+                    <div class="meta">{{ tournament.maxParticipants }} participantes</div>
+                </div>
+            </div>
+            <div class="list-item">
+                <div>
+                    <div class="list-title">Inicio</div>
+                    <div class="meta">{{ tournament.startAt ? tournament.startAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                </div>
+            </div>
+            <div class="list-item">
+                <div>
+                    <div class="list-title">Juego</div>
+                    <div class="meta">{{ tournament.game ? tournament.game.name : 'Sin juego' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-row">
+            <a class="button ghost" href="{{ path('app_tournament_index') }}">Volver</a>
+            <a class="button primary" href="{{ path('app_tournament_edit', {'id': tournament.id}) }}">Editar</a>
+            {{ include('tournament/_delete_form.html.twig') }}
+        </div>
+    </div>
+{% endblock %}

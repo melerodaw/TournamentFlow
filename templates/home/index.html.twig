@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inicio | TournamentFlow{% endblock %}
+
+{% block body %}
+<div class="card">
+    <h1 class="title">Hola {{ app.user.username }}</h1>
+    <p class="subtitle">Tu panel esta listo. Desde aqui crearemos el CRUD de torneos y participantes.</p>
+    <div class="form-grid">
+        <a class="button primary" href="{{ path('app_tournament_new') }}">Crear torneo</a>
+        <a class="button ghost" href="{{ path('app_tournament_index') }}">Ver mis torneos</a>
+        <a class="button ghost" href="{{ path('app_game_index') }}">Gestionar juegos</a>
+    </div>
+</div>
+{% endblock %}

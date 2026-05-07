@@ -6,10 +6,16 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
-class User
+#[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
+#[UniqueEntity(fields: ['username'], message: 'There is already an account with this username')]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -17,13 +23,21 @@ class User
     private ?int $id = null;
 
     #[ORM\Column(length: 50, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 50)]
     private string $username;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Email]
+    #[Assert\Length(max: 180)]
     private string $email;
 
-    #[ORM\Column(length: 255)]
-    private string $passwordHash;
+    #[ORM\Column(type: 'json')]
+    private array $roles = [];
+
+    #[ORM\Column(name: 'password_hash', length: 255)]
+    private string $password;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $avatarPath = null;
@@ -73,16 +87,47 @@ class User
         return $this;
     }
 
-    public function getPasswordHash(): string
+    public function getUserIdentifier(): string
     {
-        return $this->passwordHash;
+        return $this->username;
     }
 
-    public function setPasswordHash(string $passwordHash): self
+    /**
+     * @return list<string>
+     */
+    public function getRoles(): array
     {
-        $this->passwordHash = $passwordHash;
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+
+        return array_values(array_unique($roles));
+    }
+
+    /**
+     * @param list<string> $roles
+     */
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
 
         return $this;
+    }
+
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
+
+        return $this;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // If you store any temporary, sensitive data, clear it here.
     }
 
     public function getAvatarPath(): ?string

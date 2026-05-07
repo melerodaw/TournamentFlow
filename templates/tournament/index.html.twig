@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Torneos | TournamentFlow{% endblock %}
+
+{% block body %}
+    {% set format_labels = {
+        'single_elim': 'Eliminacion simple',
+        'swiss': 'Suizo',
+        'round_robin': 'Round robin'
+    } %}
+    {% set status_labels = {
+        'draft': 'Borrador',
+        'open': 'Abierto',
+        'running': 'En curso',
+        'completed': 'Finalizado',
+        'canceled': 'Cancelado'
+    } %}
+
+    <div class="card">
+        <div class="list-header">
+            <div>
+                <h1 class="title">Mis torneos</h1>
+                <p class="subtitle">Gestiona tus brackets y estados desde un solo lugar.</p>
+            </div>
+            <a class="button primary" href="{{ path('app_tournament_new') }}">Crear torneo</a>
+        </div>
+
+        {% if tournaments is empty %}
+            <p class="subtitle">Todavia no tienes torneos creados.</p>
+        {% else %}
+            <div class="list">
+                {% for tournament in tournaments %}
+                    <a class="list-item" href="{{ path('app_tournament_show', {'id': tournament.id}) }}">
+                        <div>
+                            <div class="list-title">{{ tournament.name }}</div>
+                            <div class="meta">
+                                {{ format_labels[tournament.format]|default(tournament.format) }}
+                                · {{ status_labels[tournament.status]|default(tournament.status) }}
+                            </div>
+                            <div class="meta">Inicio: {{ tournament.startAt ? tournament.startAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                        </div>
+                        <span class="chip">{{ tournament.maxParticipants }} plazas</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

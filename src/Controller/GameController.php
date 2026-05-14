@@ -10,6 +10,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/game')]
 final class GameController extends AbstractController
@@ -23,6 +25,7 @@ final class GameController extends AbstractController
     }
 
     #[Route('/new', name: 'app_game_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $game = new Game();
@@ -30,6 +33,17 @@ final class GameController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var UploadedFile|null $uploaded */
+            $uploaded = $form->get('imageFile')->getData();
+            if ($uploaded instanceof UploadedFile) {
+                $imagesDir = $this->getParameter('kernel.project_dir').'/public/images/games';
+                if (!is_dir($imagesDir)) {
+                    @mkdir($imagesDir, 0755, true);
+                }
+                $filename = uniqid('game_', true).'.'.($uploaded->guessExtension() ?: $uploaded->getClientOriginalExtension());
+                $uploaded->move($imagesDir, $filename);
+                $game->setImagePath('images/games/'.$filename);
+            }
             $entityManager->persist($game);
             $entityManager->flush();
 
@@ -51,12 +65,31 @@ final class GameController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_game_edit', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function edit(Request $request, Game $game, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(GameType::class, $game);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var UploadedFile|null $uploaded */
+            $uploaded = $form->get('imageFile')->getData();
+            if ($uploaded instanceof UploadedFile) {
+                $imagesDir = $this->getParameter('kernel.project_dir').'/public/images/games';
+                if (!is_dir($imagesDir)) {
+                    @mkdir($imagesDir, 0755, true);
+                }
+                $filename = uniqid('game_', true).'.'.($uploaded->guessExtension() ?: $uploaded->getClientOriginalExtension());
+                $uploaded->move($imagesDir, $filename);
+                // remove old image if exists
+                if ($game->getImagePath()) {
+                    $old = $this->getParameter('kernel.project_dir').'/public/'.ltrim($game->getImagePath(), '/');
+                    if (is_file($old)) {
+                        @unlink($old);
+                    }
+                }
+                $game->setImagePath('images/games/'.$filename);
+            }
             $entityManager->flush();
 
             return $this->redirectToRoute('app_game_index', [], Response::HTTP_SEE_OTHER);
@@ -69,6 +102,7 @@ final class GameController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_game_delete', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function delete(Request $request, Game $game, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete'.$game->getId(), $request->getPayload()->getString('_token'))) {

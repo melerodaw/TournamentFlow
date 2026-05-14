@@ -9,20 +9,30 @@
                 <h1 class="title">Juegos</h1>
                 <p class="subtitle">Define el catalogo de juegos disponibles.</p>
             </div>
-            <a class="button primary" href="{{ path('app_game_new') }}">Agregar juego</a>
+            {% if is_granted('ROLE_ADMIN') %}
+                <a class="button primary" href="{{ path('app_game_new') }}">Agregar juego</a>
+            {% endif %}
         </div>
 
         {% if games is empty %}
             <p class="subtitle">Aun no hay juegos cargados.</p>
         {% else %}
-            <div class="list">
+            <div class="catalog-grid">
                 {% for game in games %}
                     <a class="list-item" href="{{ path('app_game_show', {'id': game.id}) }}">
-                        <div>
-                            <div class="list-title">{{ game.name }}</div>
-                            <div class="meta">{{ game.imageUrl ?: 'Sin imagen' }}</div>
+                        <div class="media-row">
+                            {% if game.imagePath %}
+                                <img class="media-thumb" src="/{{ game.imagePath }}" alt="{{ game.name }}">
+                            {% else %}
+                                <div class="media-placeholder" aria-hidden="true"></div>
+                            {% endif %}
+                            <div>
+                                <div class="list-title">{{ game.name }}</div>
+                            </div>
                         </div>
-                        <span class="chip">Editar</span>
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <span class="chip">Editar</span>
+                        {% endif %}
                     </a>
                 {% endfor %}
             </div>

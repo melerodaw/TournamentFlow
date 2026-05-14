@@ -18,8 +18,8 @@ class Game
     #[ORM\Column(length: 100, unique: true)]
     private string $name;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $imageUrl = null;
+    #[ORM\Column(name: 'image_url', length: 255, nullable: true)]
+    private ?string $imagePath = null;
 
     #[ORM\OneToMany(mappedBy: 'game', targetEntity: Tournament::class)]
     private Collection $tournaments;
@@ -46,14 +46,14 @@ class Game
         return $this;
     }
 
-    public function getImageUrl(): ?string
+    public function getImagePath(): ?string
     {
-        return $this->imageUrl;
+        return $this->imagePath;
     }
 
-    public function setImageUrl(?string $imageUrl): self
+    public function setImagePath(?string $imagePath): self
     {
-        $this->imageUrl = $imageUrl;
+        $this->imagePath = $imagePath;
 
         return $this;
     }

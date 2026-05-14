@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Game;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -25,8 +26,9 @@ class GameType extends AbstractType
                     ]),
                 ],
             ])
-            ->add('imageUrl', TextType::class, [
-                'label' => 'Imagen (URL)',
+            ->add('imageFile', FileType::class, [
+                'label' => 'Imagen (opcional)',
+                'mapped' => false,
                 'required' => false,
             ])
         ;

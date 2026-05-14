@@ -20,7 +20,7 @@ class TournamentMatch
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'matches')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Tournament $tournament = null;
 
     #[ORM\Column(name: 'round_number')]
@@ -36,6 +36,7 @@ class TournamentMatch
     private ?\DateTimeImmutable $playedAt = null;
 
     #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Participant $winner = null;
 
     #[ORM\OneToMany(mappedBy: 'match', targetEntity: MatchParticipant::class)]

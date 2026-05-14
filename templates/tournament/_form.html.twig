@@ -34,6 +34,11 @@
         {{ form_widget(form.startAt) }}
         {{ form_errors(form.startAt) }}
     </div>
+    <div class="form-field">
+        {{ form_label(form.registrationDeadlineAt) }}
+        {{ form_widget(form.registrationDeadlineAt) }}
+        {{ form_errors(form.registrationDeadlineAt) }}
+    </div>
 
     <button class="button primary" type="submit">{{ button_label|default('Guardar') }}</button>
 {{ form_end(form) }}

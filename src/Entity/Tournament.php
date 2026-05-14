@@ -6,11 +6,13 @@ use App\Repository\TournamentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: TournamentRepository::class)]
 #[ORM\Table(name: 'tournament', indexes: [
     new ORM\Index(name: 'idx_tournament_status', columns: ['status']),
     new ORM\Index(name: 'idx_tournament_format', columns: ['format']),
+    new ORM\Index(name: 'idx_tournament_registration_deadline', columns: ['registration_deadline_at']),
 ])]
 class Tournament
 {
@@ -25,9 +27,12 @@ class Tournament
 
     #[ORM\ManyToOne(inversedBy: 'tournaments')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'Debes seleccionar un juego.')]
     private ?Game $game = null;
 
     #[ORM\Column(length: 120)]
+    #[Assert\NotBlank(message: 'El nombre del torneo es obligatorio.')]
+    #[Assert\Length(min: 3, max: 120, minMessage: 'El nombre debe tener al menos {{ limit }} caracteres.')]
     private string $name;
 
     #[ORM\Column(type: 'text', nullable: true)]
@@ -40,10 +45,19 @@ class Tournament
     private string $status = 'draft';
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'El numero maximo de participantes es obligatorio.')]
+    #[Assert\GreaterThanOrEqual(value: 2, message: 'El torneo debe permitir al menos 2 participantes.')]
     private int $maxParticipants;
 
     #[ORM\Column(type: 'datetime_immutable')]
+    #[Assert\NotNull(message: 'La fecha del torneo es obligatoria.')]
+    #[Assert\GreaterThan('now', message: 'La fecha del torneo debe ser futura.')]
     private \DateTimeImmutable $startAt;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Assert\NotNull(message: 'La fecha limite de inscripcion es obligatoria.')]
+    #[Assert\GreaterThan('now', message: 'La fecha limite de inscripcion debe ser futura.')]
+    private \DateTimeImmutable $registrationDeadlineAt;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
@@ -162,6 +176,18 @@ class Tournament
         return $this;
     }
 
+    public function getRegistrationDeadlineAt(): \DateTimeImmutable
+    {
+        return $this->registrationDeadlineAt;
+    }
+
+    public function setRegistrationDeadlineAt(\DateTimeImmutable $registrationDeadlineAt): self
+    {
+        $this->registrationDeadlineAt = $registrationDeadlineAt;
+
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -230,5 +256,47 @@ class Tournament
         }
 
         return $this;
+    }
+
+    #[Assert\IsTrue(message: 'La fecha limite de inscripcion debe ser anterior o igual a la fecha del torneo.')]
+    public function isRegistrationDeadlineValid(): bool
+    {
+        return $this->registrationDeadlineAt <= $this->startAt;
+    }
+
+    public function isOpenForRegistration(int $participantCount, ?\DateTimeImmutable $now = null): bool
+    {
+        $currentTime = $now ?? new \DateTimeImmutable();
+
+        return $participantCount < $this->maxParticipants && $currentTime <= $this->registrationDeadlineAt && $currentTime < $this->startAt;
+    }
+
+    public function getComputedStatus(int $participantCount, ?\DateTimeImmutable $now = null): string
+    {
+        $currentTime = $now ?? new \DateTimeImmutable();
+
+        if ($currentTime >= $this->startAt) {
+            return 'finalizado';
+        }
+
+        if ($participantCount >= $this->maxParticipants) {
+            return 'lleno';
+        }
+
+        if ($currentTime > $this->registrationDeadlineAt) {
+            return 'cerrado';
+        }
+
+        return 'abierto';
+    }
+
+    public function getComputedStatusLabel(int $participantCount, ?\DateTimeImmutable $now = null): string
+    {
+        return match ($this->getComputedStatus($participantCount, $now)) {
+            'abierto' => 'Abierto',
+            'lleno' => 'Lleno',
+            'finalizado' => 'Finalizado',
+            default => 'Cerrado',
+        };
     }
 }

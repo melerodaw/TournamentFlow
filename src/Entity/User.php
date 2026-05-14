@@ -36,6 +36,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
+    #[ORM\Column(length: 10)]
+    private string $role = 'user';
+
     #[ORM\Column(name: 'password_hash', length: 255)]
     private string $password;
 
@@ -101,6 +104,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $roles[] = 'ROLE_USER';
 
         return array_values(array_unique($roles));
+    }
+
+    public function getRole(): string
+    {
+        return $this->role;
+    }
+
+    public function setRole(string $role): self
+    {
+        $this->role = $role;
+
+        if ($role === 'admin') {
+            $this->setRoles(['ROLE_ADMIN']);
+        } else {
+            $this->setRoles([]);
+        }
+
+        return $this;
     }
 
     /**

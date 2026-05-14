@@ -3,15 +3,54 @@
 {% block title %}TournamentFlow | Torneos claros y rapidos{% endblock %}
 
 {% block body %}
-<div class="card">
-    <h1 class="title">Organiza torneos 1v1 sin friccion.</h1>
-    <p class="subtitle">
-        Crea brackets de 4, 8, 16 o 32 jugadores, controla estados y registra resultados.
-        La base esta lista para suizo y round robin cuando tu negocio lo necesite.
-    </p>
-    <div class="form-grid" style="grid-auto-flow: row;">
-        <a class="button primary" href="{{ path('app_register') }}">Crear cuenta</a>
-        <a class="button ghost" href="{{ path('app_login') }}">Ya tengo cuenta</a>
+    <div class="card">
+        <h1 class="title">Lanza y gestiona torneos competitivos en minutos.</h1>
+        <p class="subtitle">
+            TournamentFlow te ayuda a abrir inscripciones, ordenar participantes y seguir el estado de cada torneo desde un panel limpio y rapido.
+        </p>
+        <div class="hero-actions">
+            <a class="button primary" href="{{ path('app_register') }}">Empezar ahora</a>
+            <a class="button ghost" href="{{ path('app_login') }}">Iniciar sesión</a>
+        </div>
     </div>
-</div>
+
+    <div class="card" style="margin-top: 16px;">
+        <h2 class="title" style="font-size: 24px;">Juegos disponibles</h2>
+        {% if featured_games is empty %}
+            <p class="subtitle">Pronto verás el catálogo de juegos aquí.</p>
+        {% else %}
+            <div class="catalog-grid">
+                {% for game in featured_games %}
+                    <div class="list-item">
+                        <div class="media-row">
+                            {% if game.imagePath %}
+                                <img class="media-thumb" src="/{{ game.imagePath }}" alt="{{ game.name }}">
+                            {% else %}
+                                <div class="media-placeholder" aria-hidden="true"></div>
+                            {% endif %}
+                            <div class="list-title">{{ game.name }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+        <h2 class="title" style="font-size: 24px;">Torneos recientes</h2>
+        {% if recent_tournaments is empty %}
+            <p class="subtitle">Todavía no hay torneos publicados.</p>
+        {% else %}
+            <div class="list">
+                {% for tournament in recent_tournaments %}
+                    <div class="list-item">
+                        <div>
+                            <div class="list-title">{{ tournament.name }}</div>
+                            <div class="meta">{{ tournament.game ? tournament.game.name : 'Sin juego' }} · {{ tournament.startAt|date('d M Y H:i') }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}

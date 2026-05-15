@@ -25,8 +25,23 @@
             <span>{{ tournament.name }}</span>
         </div>
 
+        {% if tournament.status == 'finished' and tournament.champion %}
+            <div class="champion-banner">
+                <div class="champion-title">🏆 ¡Campeón del torneo!</div>
+                <div class="champion-name">{{ tournament.champion.user.username }}</div>
+            </div>
+        {% endif %}
+
+        {% if tournament.status == 'cancelled' %}
+            <div class="notice">Este torneo ha sido cancelado.</div>
+        {% endif %}
+
         <h1 class="title">{{ tournament.name }}</h1>
         <p class="subtitle">{{ tournament.description ?: 'Sin descripcion.' }}</p>
+
+        {% if computed_status == 'lleno' %}
+            <div class="notice">LLENO</div>
+        {% endif %}
 
         <div class="list">
             <div class="list-item">
@@ -78,7 +93,9 @@
 
         {% if is_registered %}
             <div class="notice">Ya estás inscrito.</div>
-        {% elseif can_join %}
+        {% elseif computed_status == 'lleno' %}
+            <button class="button primary" type="button" disabled style="opacity: 0.75; cursor: not-allowed;">Torneo lleno</button>
+        {% elseif can_join and tournament.status == 'open' %}
             <form method="post" action="{{ path('app_tournament_join', {'id': tournament.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('join' ~ tournament.id) }}">
                 <button class="button primary" type="submit">Unirse al torneo</button>
@@ -105,10 +122,34 @@
         {% endif %}
 
         <div class="actions-row">
-            <a class="button ghost" href="{{ path('app_tournament_index') }}">Volver</a>
-            {% if can_manage %}
-                <a class="button primary" href="{{ path('app_tournament_edit', {'id': tournament.id}) }}">Editar</a>
+            <a class="button neutral" href="{{ path('app_tournament_index') }}">Volver</a>
+
+            {% if tournament.status == 'open' and can_manage %}
+                <a class="button secondary" href="{{ path('app_tournament_edit', {'id': tournament.id}) }}">Editar</a>
+                {% if participant_count >= 4 %}
+                    <form method="post" action="{{ path('app_tournament_generate_bracket', {'id': tournament.id}) }}" style="display:inline;margin-left:8px;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('generate' ~ tournament.id) }}">
+                        <button class="button primary" type="submit">Generar bracket</button>
+                    </form>
+                {% else %}
+                    <button class="button" type="button" disabled title="Se requieren al menos 4 participantes">Generar bracket</button>
+                {% endif %}
+                <form method="post" action="{{ path('app_tournament_cancel', {'id': tournament.id}) }}" onsubmit="return confirm('¿Seguro que quieres cancelar este torneo? Esta acción no se puede deshacer.');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ tournament.id) }}">
+                    <button class="button danger" type="submit">Cancelar</button>
+                </form>
                 {{ include('tournament/_delete_form.html.twig') }}
+            {% endif %}
+
+            {% if tournament.status == 'in_progress' and can_manage %}
+                <form method="post" action="{{ path('app_tournament_cancel', {'id': tournament.id}) }}" onsubmit="return confirm('¿Seguro que quieres cancelar este torneo? Esta acción no se puede deshacer.');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ tournament.id) }}">
+                    <button class="button danger" type="submit">Cancelar</button>
+                </form>
+            {% endif %}
+
+            {% if tournament.status in ['in_progress','finished'] %}
+                <a class="button primary" href="{{ path('app_tournament_bracket', {'id': tournament.id}) }}">Ver bracket</a>
             {% endif %}
         </div>
     </div>

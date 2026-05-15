@@ -68,11 +68,19 @@ class Tournament
     #[ORM\OneToMany(mappedBy: 'tournament', targetEntity: TournamentMatch::class)]
     private Collection $matches;
 
+    #[ORM\OneToMany(mappedBy: 'tournament', targetEntity: Round::class, orphanRemoval: true)]
+    private Collection $rounds;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Participant $champion = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->participants = new ArrayCollection();
         $this->matches = new ArrayCollection();
+        $this->rounds = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -237,6 +245,47 @@ class Tournament
         return $this->matches;
     }
 
+    /**
+     * @return Collection<int, Round>
+     */
+    public function getRounds(): Collection
+    {
+        return $this->rounds;
+    }
+
+    public function addRound(Round $round): self
+    {
+        if (!$this->rounds->contains($round)) {
+            $this->rounds->add($round);
+            $round->setTournament($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRound(Round $round): self
+    {
+        if ($this->rounds->removeElement($round)) {
+            if ($round->getTournament() === $this) {
+                $round->setTournament(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getChampion(): ?Participant
+    {
+        return $this->champion;
+    }
+
+    public function setChampion(?Participant $champion): self
+    {
+        $this->champion = $champion;
+
+        return $this;
+    }
+
     public function addMatch(TournamentMatch $match): self
     {
         if (!$this->matches->contains($match)) {
@@ -268,11 +317,27 @@ class Tournament
     {
         $currentTime = $now ?? new \DateTimeImmutable();
 
+        if (in_array($this->status, ['cancelled', 'in_progress', 'finished'], true)) {
+            return false;
+        }
+
         return $participantCount < $this->maxParticipants && $currentTime <= $this->registrationDeadlineAt && $currentTime < $this->startAt;
     }
 
     public function getComputedStatus(int $participantCount, ?\DateTimeImmutable $now = null): string
     {
+        if ('cancelled' === $this->status) {
+            return 'cancelado';
+        }
+
+        if ('finished' === $this->status) {
+            return 'finalizado';
+        }
+
+        if ('in_progress' === $this->status) {
+            return 'en_progreso';
+        }
+
         $currentTime = $now ?? new \DateTimeImmutable();
 
         if ($currentTime >= $this->startAt) {
@@ -294,8 +359,10 @@ class Tournament
     {
         return match ($this->getComputedStatus($participantCount, $now)) {
             'abierto' => 'Abierto',
+            'en_progreso' => 'En progreso',
             'lleno' => 'Lleno',
             'finalizado' => 'Finalizado',
+            'cancelado' => 'Cancelado',
             default => 'Cerrado',
         };
     }

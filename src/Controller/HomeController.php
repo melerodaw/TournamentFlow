@@ -29,10 +29,25 @@ class HomeController extends AbstractController
     private function renderLanding(GameRepository $gameRepository, TournamentRepository $tournamentRepository): Response
     {
         $games = $gameRepository->findBy([], ['name' => 'ASC']);
-        $recentTournaments = array_slice($tournamentRepository->findAllOrderedByCreatedAtDesc(), 0, 6);
+        $recentTournaments = array_slice($tournamentRepository->findAllOrderedByCreatedAtDesc(), 0, 4);
+        $featuredGames = array_slice($games, 0, 6);
+        $featuredGameStats = [];
+
+        foreach ($featuredGames as $game) {
+            $activeCount = 0;
+
+            foreach ($game->getTournaments() as $tournament) {
+                if (in_array($tournament->getStatus(), ['open', 'running'], true)) {
+                    ++$activeCount;
+                }
+            }
+
+            $featuredGameStats[$game->getId()] = $activeCount;
+        }
 
         return $this->render('home/landing.html.twig', [
-            'featured_games' => array_slice($games, 0, 6),
+            'featured_games' => $featuredGames,
+            'featured_game_stats' => $featuredGameStats,
             'recent_tournaments' => $recentTournaments,
         ]);
     }

@@ -1,56 +1,129 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}TournamentFlow | Torneos claros y rapidos{% endblock %}
+{% block title %}TournamentFlow | Compite. Domina. Gana.{% endblock %}
 
 {% block body %}
-    <div class="card">
-        <h1 class="title">Lanza y gestiona torneos competitivos en minutos.</h1>
-        <p class="subtitle">
-            TournamentFlow te ayuda a abrir inscripciones, ordenar participantes y seguir el estado de cada torneo desde un panel limpio y rapido.
-        </p>
-        <div class="hero-actions">
-            <a class="button primary" href="{{ path('app_register') }}">Empezar ahora</a>
-            <a class="button ghost" href="{{ path('app_login') }}">Iniciar sesión</a>
+    <section class="hero-surface">
+        <div class="shell hero-grid">
+            <div class="hero-panel card">
+                <span class="section-label">TournamentFlow</span>
+                <h1 class="hero-title">Compite. Domina. Gana.</h1>
+                <p class="hero-copy">
+                    Crea torneos, gestiona inscripciones y sigue cada bracket con una experiencia oscura, rápida y precisa.
+                </p>
+                <div class="hero-cta-row hero-actions">
+                    <a class="button primary" href="{{ path('app_tournament_new') }}">Crear torneo</a>
+                    <a class="button ghost" href="{{ path('app_tournament_index') }}">Ver torneos</a>
+                </div>
+            </div>
+
+            <div class="hero-auth-column">
+                <aside class="hero-login-float hero-auth-panel">
+                    <h2 class="title">Iniciar sesión</h2>
+                    <p class="subtitle">Entra a tu panel y sigue gestionando tu comunidad.</p>
+
+                    <form method="post" action="{{ path('app_login') }}" class="form-grid">
+                        <div class="form-field">
+                            <label for="landing_username">Usuario</label>
+                            <input type="text" name="username" id="landing_username" autocomplete="username" placeholder="Tu usuario" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="landing_password">Contraseña</label>
+                            <input type="password" name="password" id="landing_password" autocomplete="current-password" placeholder="••••••••" required>
+                        </div>
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                        <button class="button primary" type="submit">Entrar</button>
+                    </form>
+                </aside>
+
+                <aside class="hero-login-float hero-auth-panel">
+                    <h2 class="title">Crear cuenta</h2>
+                    <p class="subtitle">Únete a la plataforma y empieza a organizar torneos.</p>
+                    <div class="form-grid" style="min-height: 190px; align-content: start;">
+                        <div class="form-field">
+                            <label>Usuario</label>
+                            <div class="notice">Haz clic en registrarte para crear tu cuenta.</div>
+                        </div>
+                        <a class="button primary" href="{{ path('app_register') }}">Crear cuenta</a>
+                        <a class="button ghost" href="{{ path('app_login') }}">Ya tengo cuenta</a>
+                    </div>
+                </aside>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <div class="card" style="margin-top: 16px;">
-        <h2 class="title" style="font-size: 24px;">Juegos disponibles</h2>
-        {% if featured_games is empty %}
-            <p class="subtitle">Pronto verás el catálogo de juegos aquí.</p>
-        {% else %}
-            <div class="catalog-grid">
-                {% for game in featured_games %}
-                    <div class="list-item">
-                        <div class="media-row">
-                            {% if game.imagePath %}
-                                <img class="media-thumb" src="/{{ game.imagePath }}" alt="{{ game.name }}">
-                            {% else %}
-                                <div class="media-placeholder" aria-hidden="true"></div>
-                            {% endif %}
-                            <div class="list-title">{{ game.name }}</div>
-                        </div>
-                    </div>
-                {% endfor %}
+    <section class="landing-section shell">
+        <div class="card">
+            <div class="list-header">
+                <div>
+                    <span class="section-label">Catálogo</span>
+                    <h2 class="title">Juegos disponibles</h2>
+                    <p class="subtitle">Elige tu batalla y descubre cuántos torneos activos tiene cada juego.</p>
+                </div>
             </div>
-        {% endif %}
-    </div>
 
-    <div class="card" style="margin-top: 16px;">
-        <h2 class="title" style="font-size: 24px;">Torneos recientes</h2>
-        {% if recent_tournaments is empty %}
-            <p class="subtitle">Todavía no hay torneos publicados.</p>
-        {% else %}
-            <div class="list">
-                {% for tournament in recent_tournaments %}
-                    <div class="list-item">
-                        <div>
-                            <div class="list-title">{{ tournament.name }}</div>
-                            <div class="meta">{{ tournament.game ? tournament.game.name : 'Sin juego' }} · {{ tournament.startAt|date('d M Y H:i') }}</div>
-                        </div>
-                    </div>
-                {% endfor %}
+            {% if featured_games is empty %}
+                <p class="subtitle">Pronto verás el catálogo de juegos aquí.</p>
+            {% else %}
+                <div class="catalog-grid">
+                    {% for game in featured_games %}
+                        <article class="list-item with-image">
+                            <img class="card-image" src="/{{ game.imagePath ?: 'images/games/placeholder.svg' }}" alt="{{ game.name }}">
+                            <div class="content">
+                                <div class="list-title">{{ game.name }}</div>
+                                <div class="meta">{{ featured_game_stats[game.id]|default(0) }} torneos activos</div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="landing-section shell">
+        <div class="card">
+            <div class="list-header">
+                <div>
+                    <span class="section-label">Actividad</span>
+                    <h2 class="title">Torneos recientes</h2>
+                    <p class="subtitle">Los últimos torneos publicados en la plataforma.</p>
+                </div>
+                <a class="button ghost" href="{{ path('app_tournament_index') }}">Ver todos los torneos</a>
             </div>
-        {% endif %}
-    </div>
+
+            {% if recent_tournaments is empty %}
+                <p class="subtitle">Todavía no hay torneos publicados.</p>
+            {% else %}
+                <div class="catalog-grid">
+                    {% for tournament in recent_tournaments %}
+                        {% set participant_count = tournament.participants|length %}
+                        {% set available_slots = tournament.maxParticipants - participant_count %}
+                        <a class="list-item with-image" href="{{ path('app_tournament_show', {'id': tournament.id}) }}">
+                            <img class="card-image" src="/{{ tournament.game and tournament.game.imagePath ? tournament.game.imagePath : 'images/games/placeholder.svg' }}" alt="{{ tournament.game ? tournament.game.name : 'Juego' }}">
+                            <div class="content">
+                                <div class="list-title">{{ tournament.name }}</div>
+                                <div class="meta">{{ tournament.game ? tournament.game.name : 'Sin juego' }}</div>
+                            </div>
+                            <div class="actions-wrapper">
+                                {% set status_label = tournament.status == 'open' ? 'Abierto' : (tournament.status == 'running' ? 'En curso' : (tournament.status == 'completed' ? 'Finalizado' : 'Lleno')) %}
+                                {% set status_class = tournament.status == 'open' ? 'status-pill status-open' : (tournament.status == 'running' ? 'status-pill status-open' : (tournament.status == 'completed' ? 'status-pill status-finished' : 'status-pill status-full')) %}
+                                <span class="{{ status_class }}">{{ status_label }}</span>
+                                <span class="chip">{{ available_slots > 0 ? available_slots : 0 }} plazas</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="shell footer-inner">
+            <div>TournamentFlow · 2026</div>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <a href="{{ path('app_login') }}">Iniciar sesión</a>
+                <a href="{{ path('app_register') }}">Registrarse</a>
+            </div>
+        </div>
+    </footer>
 {% endblock %}

@@ -14,6 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Bundle\FrameworkBundle\Attribute\IsGranted;
 
 #[Route('/tournament')]
 final class TournamentController extends AbstractController
@@ -79,6 +80,7 @@ final class TournamentController extends AbstractController
 
         $tournament = new Tournament();
         $tournament->setOrganizer($user);
+        $tournament->setStatus('open');
         $form = $this->createForm(TournamentType::class, $tournament);
         $form->handleRequest($request);
 
@@ -199,6 +201,33 @@ final class TournamentController extends AbstractController
         ]);
     }
 
+    #[IsGranted('ROLE_USER')]
+    #[Route('/torneo/{id}/cancelar', name: 'app_tournament_cancel', methods: ['POST'])]
+    public function cancel(Request $request, Tournament $tournament, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->canManageTournament($tournament)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('cancel'.$tournament->getId(), $request->getPayload()->getString('_token'))) {
+            return $this->redirectToRoute('app_tournament_show', ['id' => $tournament->getId()], Response::HTTP_SEE_OTHER);
+        }
+
+        if ('finished' === $tournament->getStatus()) {
+            $this->addFlash('warning', 'No se puede cancelar un torneo finalizado.');
+
+            return $this->redirectToRoute('app_tournament_show', ['id' => $tournament->getId()], Response::HTTP_SEE_OTHER);
+        }
+
+        if ('cancelled' !== $tournament->getStatus()) {
+            $tournament->setStatus('cancelled');
+            $entityManager->flush();
+            $this->addFlash('success', 'Torneo cancelado correctamente.');
+        }
+
+        return $this->redirectToRoute('app_tournament_show', ['id' => $tournament->getId()], Response::HTTP_SEE_OTHER);
+    }
+
     #[Route('/{id}', name: 'app_tournament_delete', methods: ['POST'])]
     public function delete(Request $request, Tournament $tournament, EntityManagerInterface $entityManager): Response
     {
@@ -305,6 +334,8 @@ final class TournamentController extends AbstractController
             'abierto' => 'status-pill status-open',
             'lleno' => 'status-pill status-full',
             'finalizado' => 'status-pill status-finished',
+            'cancelado' => 'status-pill status-cancelled',
+            'en_progreso' => 'status-pill status-progress',
             default => 'status-pill status-closed',
         };
     }

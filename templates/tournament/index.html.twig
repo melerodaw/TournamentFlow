@@ -141,19 +141,49 @@
             <div class="catalog-grid">
                 {% for tournament in tournaments %}
                     {% set meta = tournament_meta[tournament.id]|default({'participant_count': 0, 'status_label': 'Abierto', 'status_class': 'status-pill status-open'}) %}
-                    <a class="list-item" href="{{ path('app_tournament_show', {'id': tournament.id}) }}">
-                        <div>
-                            <div class="list-title">{{ tournament.name }}</div>
-                            <div class="meta">
-                                {{ format_labels[tournament.format]|default(tournament.format) }}
-                                · {{ tournament.game ? tournament.game.name : 'Sin juego' }}
+                    {% set is_full = meta.status == 'lleno' or meta.participant_count >= tournament.maxParticipants %}
+                    <article class="list-item with-image{{ tournament.status == 'cancelled' ? ' is-cancelled' : '' }}">
+                        <a class="card-link" href="{{ path('app_tournament_show', {'id': tournament.id}) }}">
+                            <div class="card-media">
+                                {% if tournament.game and tournament.game.imagePath %}
+                                    <img class="card-image" src="/{{ tournament.game.imagePath }}" alt="{{ tournament.game.name }}">
+                                {% else %}
+                                    <div class="card-placeholder">
+                                        <span>{{ tournament.game ? tournament.game.name : 'Sin juego' }}</span>
+                                    </div>
+                                {% endif %}
+
+                                {% if tournament.status == 'finished' %}
+                                    <span class="card-badge card-badge--finished">FINALIZADO</span>
+                                {% elseif tournament.status == 'cancelled' %}
+                                    <span class="card-badge card-badge--cancelled">CANCELADO</span>
+                                {% elseif is_full %}
+                                    <span class="card-badge">LLENO</span>
+                                {% endif %}
                             </div>
-                            <div class="meta">Inscripción hasta: {{ tournament.registrationDeadlineAt ? tournament.registrationDeadlineAt|date('d M Y H:i') : 'Sin fecha' }}</div>
-                            <div class="meta">Inicio: {{ tournament.startAt ? tournament.startAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+
+                            <div class="content">
+                                <div class="list-title">{{ tournament.name }}</div>
+                                {% if tournament.status == 'finished' and tournament.champion %}
+                                    <div class="meta">🏆 Ganador: {{ tournament.champion.user.username }}</div>
+                                {% endif %}
+                                <div class="meta">
+                                    {{ format_labels[tournament.format]|default(tournament.format) }}
+                                    · {{ tournament.game ? tournament.game.name : 'Sin juego' }}
+                                </div>
+                                <div class="meta">Inscripción hasta: {{ tournament.registrationDeadlineAt ? tournament.registrationDeadlineAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                                <div class="meta">Inicio: {{ tournament.startAt ? tournament.startAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                            </div>
+                        </a>
+
+                        <div class="actions-wrapper">
+                            <span class="{{ is_full ? 'status-pill status-full' : meta.status_class }}">{{ is_full ? 'LLENO' : meta.status_label }}</span>
+                            <span class="chip">{{ meta.participant_count }}/{{ tournament.maxParticipants }} inscritos</span>
+                            {% if tournament.status in ['in_progress', 'finished'] %}
+                                <a class="button ghost" href="{{ path('app_tournament_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                            {% endif %}
                         </div>
-                        <span class="{{ meta.status_class }}">{{ meta.status_label }}</span>
-                        <span class="chip">{{ meta.participant_count }}/{{ tournament.maxParticipants }} inscritos</span>
-                    </a>
+                    </article>
                 {% endfor %}
             </div>
         {% endif %}

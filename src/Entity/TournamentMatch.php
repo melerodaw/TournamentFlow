@@ -6,11 +6,13 @@ use App\Repository\TournamentMatchRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Round;
+use App\Entity\Participant;
 
 #[ORM\Entity(repositoryClass: TournamentMatchRepository::class)]
 #[ORM\Table(name: 'tournament_match', indexes: [
     new ORM\Index(name: 'idx_match_status', columns: ['status']),
-    new ORM\Index(name: 'idx_match_round', columns: ['round_number']),
+    new ORM\Index(name: 'idx_match_round', columns: ['round_id']),
 ])]
 class TournamentMatch
 {
@@ -23,8 +25,12 @@ class TournamentMatch
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Tournament $tournament = null;
 
-    #[ORM\Column(name: 'round_number')]
-    private int $roundNumber;
+    #[ORM\ManyToOne(targetEntity: Round::class, inversedBy: 'matches')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?Round $round = null;
+
+    #[ORM\Column]
+    private int $slot = 0;
 
     #[ORM\Column(length: 30)]
     private string $status = 'scheduled';
@@ -39,6 +45,14 @@ class TournamentMatch
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Participant $winner = null;
 
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Participant $participant1 = null;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Participant $participant2 = null;
+
     #[ORM\OneToMany(mappedBy: 'match', targetEntity: MatchParticipant::class)]
     private Collection $matchParticipants;
 
@@ -50,6 +64,18 @@ class TournamentMatch
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getRound(): ?Round
+    {
+        return $this->round;
+    }
+
+    public function setRound(?Round $round): self
+    {
+        $this->round = $round;
+
+        return $this;
     }
 
     public function getTournament(): ?Tournament
@@ -64,14 +90,14 @@ class TournamentMatch
         return $this;
     }
 
-    public function getRoundNumber(): int
+    public function getSlot(): int
     {
-        return $this->roundNumber;
+        return $this->slot;
     }
 
-    public function setRoundNumber(int $roundNumber): self
+    public function setSlot(int $slot): self
     {
-        $this->roundNumber = $roundNumber;
+        $this->slot = $slot;
 
         return $this;
     }
@@ -120,6 +146,30 @@ class TournamentMatch
     public function setWinner(?Participant $winner): self
     {
         $this->winner = $winner;
+
+        return $this;
+    }
+
+    public function getParticipant1(): ?Participant
+    {
+        return $this->participant1;
+    }
+
+    public function setParticipant1(?Participant $participant1): self
+    {
+        $this->participant1 = $participant1;
+
+        return $this;
+    }
+
+    public function getParticipant2(): ?Participant
+    {
+        return $this->participant2;
+    }
+
+    public function setParticipant2(?Participant $participant2): self
+    {
+        $this->participant2 = $participant2;
 
         return $this;
     }

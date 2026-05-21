@@ -19,6 +19,11 @@
         {{ form_widget(form.format) }}
         {{ form_errors(form.format) }}
     </div>
+    <div class="form-field" id="swiss-rounds-field" style="display:none;">
+        {{ form_label(form.swissRounds) }}
+        {{ form_widget(form.swissRounds) }}
+        {{ form_errors(form.swissRounds) }}
+    </div>
     <div class="form-field">
         {{ form_label(form.maxParticipants) }}
         {{ form_widget(form.maxParticipants) }}
@@ -37,3 +42,25 @@
 
     <button class="button primary" type="submit">{{ button_label|default('Guardar') }}</button>
 {{ form_end(form) }}
+
+<script>
+    (function () {
+        const formatSelect = document.querySelector('[name$="[format]"]');
+        const swissField = document.getElementById('swiss-rounds-field');
+
+        function update() {
+            if (!formatSelect) return;
+            const val = formatSelect.value;
+            if (val === 'swiss') {
+                swissField.style.display = 'block';
+            } else {
+                swissField.style.display = 'none';
+            }
+        }
+
+        update();
+        if (formatSelect) {
+            formatSelect.addEventListener('change', update);
+        }
+    })();
+</script>

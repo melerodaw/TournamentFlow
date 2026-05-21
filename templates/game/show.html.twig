@@ -9,6 +9,10 @@
             <img src="/{{ game.imagePath ?: 'images/games/placeholder.svg' }}" alt="{{ game.name }}">
         </div>
 
+        {% if game.description %}
+            <p class="subtitle">{{ game.description }}</p>
+        {% endif %}
+
         <div class="actions-row">
             <a class="button ghost" href="{{ path('app_game_index') }}">Volver</a>
             {% if is_granted('ROLE_ADMIN') %}

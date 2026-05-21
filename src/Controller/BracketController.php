@@ -7,6 +7,7 @@ use App\Entity\Tournament;
 use App\Entity\TournamentMatch;
 use App\Repository\ParticipantRepository;
 use App\Repository\TournamentMatchRepository;
+use App\Service\SwissBracketService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -230,6 +231,153 @@ final class BracketController extends AbstractController
         $this->addFlash('success', 'Resultado guardado y ganador avanzado.');
 
         return $this->redirectToRoute('app_tournament_bracket', ['id' => $tournament->getId()]);
+    }
+
+
+
+    #[Route('/{id}/swiss/generar-ronda', name: 'app_tournament_swiss_generate_round', methods: ['POST'])]
+    public function swissGenerate(Request $request, Tournament $tournament, SwissBracketService $swissService, ParticipantRepository $participantRepository, EntityManagerInterface $em): Response
+    {
+        $user = $this->getUser();
+        if (!$user || ($tournament->getOrganizer()?->getId() !== $user->getId() && !in_array('ROLE_ADMIN', $user->getRoles(), true))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($tournament->getFormat() !== 'swiss') {
+            $this->addFlash('warning', 'Este endpoint es solo para torneos en formato Swiss.');
+
+            return $this->redirectToRoute('app_tournament_show', ['id' => $tournament->getId()]);
+        }
+
+        $participantCount = $participantRepository->countByTournament($tournament);
+        if ($participantCount < 4) {
+            $this->addFlash('warning', 'Se necesitan al menos 4 participantes para generar rondas Swiss.');
+
+            return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
+        }
+
+        $roundCount = count($tournament->getRounds());
+        $planned = $tournament->getSwissRounds() ?? (int) ceil(log($participantCount, 2));
+
+        if ($roundCount >= $planned) {
+            $this->addFlash('warning', 'Ya se han generado todas las rondas previstas.');
+
+            return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
+        }
+
+        if ($roundCount === 0) {
+            $swissService->generateFirstRound($tournament);
+        } else {
+            // ensure last round completed
+            $lastRoundNumber = 0;
+            foreach ($tournament->getRounds() as $r) {
+                $lastRoundNumber = max($lastRoundNumber, $r->getNumber());
+            }
+            foreach ($tournament->getRounds() as $r) {
+                if ($r->getNumber() === $lastRoundNumber) {
+                    foreach ($r->getMatches() as $m) {
+                        if ($m->getStatus() !== 'completed') {
+                            $this->addFlash('warning', 'No se pueden generar nuevas rondas hasta que todos los partidos de la ronda actual estén completados.');
+
+                            return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
+                        }
+                    }
+                }
+            }
+
+            $swissService->generateNextRound($tournament);
+        }
+
+        $tournament->setStatus('in_progress');
+        $em->flush();
+
+        $this->addFlash('success', 'Ronda generada correctamente.');
+
+        return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
+    }
+
+    #[Route('/{id}/swiss/bracket', name: 'app_tournament_swiss_bracket', methods: ['GET'])]
+    public function swissBracket(Tournament $tournament, TournamentMatchRepository $matchRepository, SwissBracketService $swissService): Response
+    {
+        if ($tournament->getFormat() !== 'swiss') {
+            return $this->redirectToRoute('app_tournament_bracket', ['id' => $tournament->getId()]);
+        }
+
+        $matches = $matchRepository->findBy(['tournament' => $tournament], ['round' => 'ASC', 'slot' => 'ASC']);
+        $groups = [];
+        foreach ($matches as $m) {
+            $r = $m->getRound() ? $m->getRound()->getNumber() : 1;
+            $groups[$r][] = $m;
+        }
+        ksort($groups);
+
+        $standings = $swissService->calculateStandings($tournament);
+
+        return $this->render('tournament/swiss_bracket.html.twig', [
+            'tournament' => $tournament,
+            'rounds' => $groups,
+            'standings' => $standings,
+        ]);
+    }
+
+    #[Route('/{id}/swiss/resultado/{matchId}', name: 'app_tournament_swiss_result', methods: ['POST'])]
+    public function swissResult(Request $request, Tournament $tournament, int $matchId, TournamentMatchRepository $matchRepository, ParticipantRepository $participantRepository, EntityManagerInterface $em, SwissBracketService $swissService): Response
+    {
+        $user = $this->getUser();
+        if (!$user || ($tournament->getOrganizer()?->getId() !== $user->getId() && !in_array('ROLE_ADMIN', $user->getRoles(), true))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $match = $matchRepository->find($matchId);
+        if (!$match || $match->getTournament()->getId() !== $tournament->getId()) {
+            $this->addFlash('error', 'Partido no encontrado.');
+
+            return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
+        }
+
+        if ($match->getWinner() !== null) {
+            $this->addFlash('warning', 'Este partido ya tiene un ganador.');
+
+            return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
+        }
+
+        $winnerId = (int) $request->request->get('winner_id');
+        $winner = $participantRepository->find($winnerId);
+        if (!$winner) {
+            $this->addFlash('error', 'Participante inválido.');
+
+            return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
+        }
+
+        if ($winner->getTournament()->getId() !== $tournament->getId()) {
+            $this->addFlash('error', 'El participante no está inscrito en este torneo.');
+
+            return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
+        }
+
+        $match->setWinner($winner);
+        $match->setStatus('completed');
+        $match->setPlayedAt(new \DateTimeImmutable());
+
+        $em->flush();
+
+        // if swiss complete, finalize
+        if ($swissService->isSwissComplete($tournament)) {
+            $standings = $swissService->calculateStandings($tournament);
+            if (!empty($standings)) {
+                $champ = $standings[0]['participant'] ?? null;
+                if ($champ) {
+                    $tournament->setChampion($champ);
+                    $tournament->setStatus('finished');
+                    $em->flush();
+                    $this->addFlash('success', 'Torneo finalizado. Campeón: ' . $champ->getUser()->getUsername());
+                }
+            }
+        }
+
+        $this->addFlash('success', 'Resultado registrado.');
+
+        return $this->redirectToRoute('app_tournament_swiss_bracket', ['id' => $tournament->getId()]);
     }
 
     private function roundName(int $participantCount, int $roundNumber): string

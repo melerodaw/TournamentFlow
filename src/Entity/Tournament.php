@@ -75,12 +75,27 @@ class Tournament
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Participant $champion = null;
 
+    #[ORM\Column(name: 'swiss_rounds', type: 'integer', nullable: true)]
+    private ?int $swissRounds = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->participants = new ArrayCollection();
         $this->matches = new ArrayCollection();
         $this->rounds = new ArrayCollection();
+    }
+
+    public function getSwissRounds(): ?int
+    {
+        return $this->swissRounds;
+    }
+
+    public function setSwissRounds(?int $swissRounds): self
+    {
+        $this->swissRounds = $swissRounds;
+
+        return $this;
     }
 
     public function getId(): ?int

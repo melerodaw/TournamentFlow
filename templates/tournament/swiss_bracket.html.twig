@@ -1,0 +1,265 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bracket Suizo — {{ tournament.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        :root {
+            --swiss-gap: 2rem;
+            --swiss-standings-width: 380px;
+            --swiss-card-min-width: 260px;
+        }
+
+        .swiss-container {
+            padding: 1rem 2rem;
+            max-width: 100%;
+        }
+
+        @media(min-width: 900px) {
+            .swiss-container { padding-left: 3rem; padding-right: 3rem; }
+        }
+
+        .swiss-layout {
+            display: flex;
+            gap: var(--swiss-gap);
+            align-items: flex-start;
+            flex-direction: row;
+            flex-wrap: nowrap;
+        }
+
+        /* Left column: rounds list */
+        .swiss-rounds {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 100%;
+        }
+
+        /* Right column: standings - fixed width and sticky */
+        .swiss-standings {
+            width: 400px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .swiss-round-card {
+            min-width: var(--swiss-card-min-width);
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .swiss-round-table {
+            width: 100%;
+            table-layout: auto;
+            border-collapse: collapse;
+        }
+
+        .swiss-round-table th,
+        .swiss-round-table td {
+            padding: 8px 12px;
+            vertical-align: middle;
+            overflow: hidden;
+        }
+
+        /* Allow names to wrap so they are fully readable */
+        .swiss-round-table td.player,
+        .swiss-round-table td.winner-column {
+            white-space: normal;
+            text-overflow: clip;
+        }
+
+        /* Narrow vs column */
+        .swiss-round-table td.vs-col,
+        .swiss-round-table th.vs-col {
+            white-space: nowrap;
+            width: 30px;
+            text-align: center;
+        }
+
+        .swiss-round-table tbody tr + tr {
+            border-top: 1px solid #2a2a3a;
+        }
+
+        .match-row {
+            padding: 0.5rem 0;
+        }
+
+        .winner-column { /* width handled by colgroup */ }
+
+        .swiss-actions {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+        }
+
+        .swiss-actions .button {
+            flex: 1;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            min-height: 38px;
+            padding-inline: 10px;
+        }
+
+        /* Standings table styles */
+        .standings-table { width: 100%; border-collapse: collapse; }
+        .standings-table th, .standings-table td { padding: 8px 12px; }
+        .standings-table tbody tr { border-top: 1px solid #2a2a3a; }
+        .standings-table td.numeric { text-align: center; }
+        .standings-table td.player { text-align: left; width: 100%; }
+        .standings-leader { border: 2px solid rgba(245,158,11,0.45); background: rgba(245,158,11,0.07); }
+
+        /* Ensure standings card doesn't overflow */
+        .swiss-standings .card { overflow: hidden; }
+
+        /* Headers should not be truncated */
+        .standings-table thead th {
+            overflow: visible;
+            text-overflow: clip;
+            white-space: nowrap;
+        }
+
+        /* Cells truncated if needed, but headers remain visible */
+        .standings-table tbody td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .swiss-layout { flex-direction: column; }
+            .swiss-standings { position: static; width: 100%; max-width: none; }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <h1 class="title">Bracket Suizo — {{ tournament.name }}</h1>
+        <p class="subtitle">Formato: Suizo</p>
+
+        {% if tournament.status == 'finished' and tournament.champion %}
+            <div class="bracket-banner">✨ <span class="trophy">🏆</span> <span class="champ-name">{{ tournament.champion.user.username }}</span> es el campeón de este torneo ✨</div>
+        {% endif %}
+
+        <div class="swiss-container">
+            <div class="swiss-layout">
+                <div class="swiss-rounds">
+                    {% for number, matches in rounds %}
+                        <div class="card swiss-round-card" style="margin-bottom:16px;">
+                            <h3 style="color:#94a3b8;">Ronda {{ number }}</h3>
+                            <table class="swiss-round-table">
+                                <colgroup>
+                                    <col style="width:35%" />
+                                    <col style="width:30px" />
+                                    <col style="width:35%" />
+                                    <col style="width:auto" />
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left; padding:6px;">Participante 1</th>
+                                        <th style="text-align:center; padding:6px;">vs</th>
+                                        <th style="text-align:left; padding:6px;">Participante 2</th>
+                                        <th style="text-align:left; padding:6px;">Ganador</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for match in matches %}
+                                        <tr class="match-row">
+                                            <td class="player">{{ match.participant1 ? match.participant1.user.username : 'Por determinar' }}{% if match.participant2 is null and match.participant1 %} — Bye (victoria automática){% endif %}</td>
+                                            <td style="text-align:center;">vs</td>
+                                            <td class="player">{{ match.participant2 ? match.participant2.user.username : (match.participant1 ? 'Bye' : 'Por determinar') }}</td>
+                                            <td class="winner-column">
+                                                {% if match.winner %}
+                                                    <span title="{{ match.winner.user.username }}" style="color:#7c3aed; font-weight:700; display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ match.winner.user.username }}</span>
+                                                {% else %}
+                                                    <span style="color:#94a3b8;">Pendiente</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% if not match.winner and app.user and (tournament.organizer and app.user.id == tournament.organizer.id or is_granted('ROLE_ADMIN')) and match.participant1 and match.participant2 %}
+                                            <tr>
+                                                <td colspan="4" style="padding:8px; border-top:1px dashed #2a2a3a;">
+                                                    <div class="swiss-actions">
+                                                        <form method="post" action="{{ path('app_tournament_swiss_result', {'id': tournament.id, 'matchId': match.id}) }}">
+                                                            <input type="hidden" name="winner_id" value="{{ match.participant1.id }}">
+                                                            <button class="button" type="submit">Gana {{ match.participant1.user.username }}</button>
+                                                        </form>
+                                                        <form method="post" action="{{ path('app_tournament_swiss_result', {'id': tournament.id, 'matchId': match.id}) }}">
+                                                            <input type="hidden" name="winner_id" value="{{ match.participant2.id }}">
+                                                            <button class="button" type="submit">Gana {{ match.participant2.user.username }}</button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <aside class="swiss-standings">
+                    <div class="card">
+                        <h3 class="title" style="font-size:16px; margin-top:0;">Clasificación</h3>
+                        <table class="standings-table">
+                            <colgroup>
+                                <col style="width:8%" />
+                                <col style="width:46%" />
+                                <col style="width:8%" />
+                                <col style="width:8%" />
+                                <col style="width:14%" />
+                                <col style="width:16%" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; padding:6px;">Pos</th>
+                                    <th style="text-align:left; padding:6px;">Jugador</th>
+                                    <th style="text-align:center; padding:6px;">Pts</th>
+                                    <th style="text-align:center; padding:6px;">PJ</th>
+                                    <th style="text-align:center; padding:6px;">V</th>
+                                    <th style="text-align:center; padding:6px;">D</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i, row in standings %}
+                                    <tr class="{% if loop.first %}standings-leader{% endif %}">
+                                        <td class="numeric">{{ loop.index }}</td>
+                                        <td class="player">{{ row.participant.user.username }}</td>
+                                        <td class="numeric">{{ row.points }}</td>
+                                        <td class="numeric">{{ row.wins + row.losses }}</td>
+                                        <td class="numeric">{{ row.wins }}</td>
+                                        <td class="numeric">{{ row.losses }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="6" style="padding:8px; color:#94a3b8;">Sin datos</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        {% if app.user and (tournament.organizer and app.user.id == tournament.organizer.id or is_granted('ROLE_ADMIN')) %}
+                            <div style="margin-top:12px;">
+                                {% set lastRound = (tournament.rounds|length) %}
+                                {% set planned = tournament.swissRounds ?: 0 %}
+                                {% if planned > lastRound and lastRound > 0 %}
+                                    <form method="post" action="{{ path('app_tournament_swiss_generate_round', {'id': tournament.id}) }}">
+                                        <button class="button primary" type="submit">Generar siguiente ronda</button>
+                                    </form>
+                                {% elseif lastRound == 0 %}
+                                    <form method="post" action="{{ path('app_tournament_swiss_generate_round', {'id': tournament.id}) }}">
+                                        <button class="button primary" type="submit">Generar primera ronda</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+{% endblock %}

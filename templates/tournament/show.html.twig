@@ -127,10 +127,16 @@
             {% if tournament.status == 'open' and can_manage %}
                 <a class="button secondary" href="{{ path('app_tournament_edit', {'id': tournament.id}) }}">Editar</a>
                 {% if participant_count >= 4 %}
-                    <form method="post" action="{{ path('app_tournament_generate_bracket', {'id': tournament.id}) }}" style="display:inline;margin-left:8px;">
-                        <input type="hidden" name="_token" value="{{ csrf_token('generate' ~ tournament.id) }}">
-                        <button class="button primary" type="submit">Generar bracket</button>
-                    </form>
+                    {% if tournament.format == 'swiss' %}
+                        <form method="post" action="{{ path('app_tournament_swiss_generate_round', {'id': tournament.id}) }}" style="display:inline;margin-left:8px;">
+                            <button class="button primary" type="submit">Generar primera ronda</button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{{ path('app_tournament_generate_bracket', {'id': tournament.id}) }}" style="display:inline;margin-left:8px;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('generate' ~ tournament.id) }}">
+                            <button class="button primary" type="submit">Generar bracket</button>
+                        </form>
+                    {% endif %}
                 {% else %}
                     <button class="button" type="button" disabled title="Se requieren al menos 4 participantes">Generar bracket</button>
                 {% endif %}
@@ -149,7 +155,11 @@
             {% endif %}
 
             {% if tournament.status in ['in_progress','finished'] %}
-                <a class="button primary" href="{{ path('app_tournament_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                {% if tournament.format == 'swiss' %}
+                    <a class="button primary" href="{{ path('app_tournament_swiss_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                {% else %}
+                    <a class="button primary" href="{{ path('app_tournament_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                {% endif %}
             {% endif %}
         </div>
     </div>

@@ -16,10 +16,16 @@ class Game
     private ?int $id = null;
 
     #[ORM\Column(length: 100, unique: true)]
-    private string $name;
+    private string $name = '';
 
     #[ORM\Column(name: 'image_url', length: 255, nullable: true)]
     private ?string $imagePath = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $rawgId = null;
 
     #[ORM\OneToMany(mappedBy: 'game', targetEntity: Tournament::class)]
     private Collection $tournaments;
@@ -54,6 +60,30 @@ class Game
     public function setImagePath(?string $imagePath): self
     {
         $this->imagePath = $imagePath;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getRawgId(): ?int
+    {
+        return $this->rawgId;
+    }
+
+    public function setRawgId(?int $rawgId): self
+    {
+        $this->rawgId = $rawgId;
 
         return $this;
     }

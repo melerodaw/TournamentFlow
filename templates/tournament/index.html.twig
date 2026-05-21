@@ -180,7 +180,11 @@
                             <span class="{{ is_full ? 'status-pill status-full' : meta.status_class }}">{{ is_full ? 'LLENO' : meta.status_label }}</span>
                             <span class="chip">{{ meta.participant_count }}/{{ tournament.maxParticipants }} inscritos</span>
                             {% if tournament.status in ['in_progress', 'finished'] %}
-                                <a class="button ghost" href="{{ path('app_tournament_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                                {% if tournament.format == 'swiss' %}
+                                    <a class="button ghost" href="{{ path('app_tournament_swiss_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                                {% else %}
+                                    <a class="button ghost" href="{{ path('app_tournament_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </article>

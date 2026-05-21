@@ -5,37 +5,84 @@
 {% block body %}
     <div class="card">
         <h1 class="title">Bracket — {{ tournament.name }}</h1>
-        <p class="subtitle">Formato: {{ tournament.format }}</p>
+        {% set format_labels = {
+            'single_elim': 'Eliminación directa',
+            'round_robin': 'Round Robin',
+            'swiss': 'Sistema Suizo'
+        } %}
+
+        <p class="subtitle">Formato: {{ format_labels[tournament.format]|default(tournament.format) }}</p>
 
         {% if tournament.status == 'finished' and tournament.champion %}
-            <div class="bracket-banner">🏆 {{ tournament.champion.user.username }} es el campeón de este torneo</div>
+            <div class="bracket-banner">✨ <span class="trophy">🏆</span> <span class="champ-name">{{ tournament.champion.user.username }}</span> es el campeón de este torneo ✨</div>
         {% endif %}
 
-        <div id="bracket-root" class="bracket" style="position:relative; display:flex; gap:24px; overflow:auto; padding: 16px; align-items:flex-start;">
-            <svg id="bracket-connectors" style="position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; overflow:visible;"></svg>
+        <style>
+            /* Bracket visual overrides (force dark) */
+            #bracket-root { position:relative; display:flex; gap:24px; overflow:auto; padding:16px; align-items:flex-start; }
+            #bracket-connectors { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+            .round-column { min-width:220px; position:relative; }
+            .round-column h3 { color: #94a3b8; margin: 0 0 12px; }
+            .match-card { min-width:260px; width:260px; background: #13131a !important; color: #f1f5f9 !important; border: 1px solid #2a2a3a !important; border-radius:6px; padding:8px; margin-bottom:24px; box-sizing:border-box; display:flex; flex-direction:column; }
+            .bracket-banner { background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; padding:12px 16px; border-radius:8px; margin-bottom:12px; color:#f59e0b; font-weight:700; display:inline-block; }
+            .bracket-banner .champ-name { color:#f59e0b; font-size:1.15rem; margin:0 6px; }
+            .bracket-banner .trophy { font-size:1.3rem; margin-right:6px; }
+            .participant-row { padding:6px 4px; font-size:14px; line-height:1.2; }
+            .participant-sep { height:1px; background:#2a2a3a; margin:6px 0; }
+            .participant-row .pending { color:#94a3b8; font-style:italic; }
+            .participant-row.winner { color:#7c3aed; font-weight:700; }
+            .winner-label { margin-top:6px; color:#7c3aed; font-weight:700; font-size:13px; }
+            .match-actions { display:flex; flex-direction:row; gap:8px; margin-top:6px; }
+            .match-actions form { flex:1; }
+            .match-actions form .button { flex:1; white-space:nowrap; font-size:0.8rem; }
+
+            /* Force dark background for any bracket-related card */
+            .bracket-match,
+            .bracket-match-pending,
+            [class*="bracket"] {
+                background-color: #13131a !important;
+                color: #f1f5f9 !important;
+                border: 1px solid #2a2a3a !important;
+            }
+        </style>
+
+        <div id="bracket-root" class="bracket">
+            <svg id="bracket-connectors"></svg>
             {% for number, matches in rounds %}
-                <div class="round-column" data-round="{{ number }}" style="min-width:220px; position:relative;">
-                    <h3>Ronda {{ number }}</h3>
+                <div class="round-column" data-round="{{ number }}">
+                    <h3>{{ round_labels[number]|default('Ronda ' ~ number) }}</h3>
                     {% for match in matches %}
-                        <div class="match-card{{ tournament.champion and match.winner and tournament.champion.id == match.winner.id ? ' is-champion' : '' }}" data-round="{{ number }}" data-slot="{{ match.slot }}" data-match-id="{{ match.id }}" style="border:1px solid #ddd; padding:8px; margin-bottom:24px; border-radius:6px; background: #fff; position:relative;">
-                            <div style="font-weight: {{ match.winner ? '700' : '400' }};">
-                                <div>{{ match.participant1 ? match.participant1.user.username : 'Por determinar' }}</div>
-                                <div style="opacity:0.75; font-size:12px;">vs</div>
-                                <div>{{ match.participant2 ? match.participant2.user.username : 'Por determinar' }}</div>
+                        <div class="match-card bracket-match {{ (not match.participant1 or not match.participant2) ? 'bracket-match-pending' : '' }} {{ tournament.champion and match.winner and tournament.champion.id == match.winner.id ? ' is-champion' : '' }}" data-round="{{ number }}" data-slot="{{ match.slot }}" data-match-id="{{ match.id }}">
+                            <div class="participant-row{% if match.winner and match.winner.id == (match.participant1 ? match.participant1.id : 0) %} winner{% endif %}">
+                                {% if match.participant1 %}
+                                    {{ match.participant1.user.username }}
+                                {% else %}
+                                    <span class="pending">Por determinar</span>
+                                {% endif %}
+                            </div>
+                            <div class="participant-sep" aria-hidden="true"></div>
+                            <div class="participant-row{% if match.winner and match.winner.id == (match.participant2 ? match.participant2.id : 0) %} winner{% endif %}">
+                                {% if match.participant2 %}
+                                    {{ match.participant2.user.username }}
+                                {% else %}
+                                    <span class="pending">Por determinar</span>
+                                {% endif %}
                             </div>
                             {% if match.winner %}
-                                <div style="margin-top:6px; color: #b8860b; font-weight:700;">Ganador: {{ match.winner.user.username }}</div>
-                            {% elseif app.user and (tournament.organizer and app.user.id == tournament.organizer.id or is_granted('ROLE_ADMIN')) and match.participant1 and match.participant2 %}
-                                <div style="display:flex; gap:8px; margin-top:8px;">
-                                    <form method="post" action="{{ path('app_tournament_match_result', {'id': tournament.id, 'matchId': match.id}) }}">
-                                        <input type="hidden" name="winner_id" value="{{ match.participant1.id }}">
-                                        <button class="button" type="submit">{{ match.participant1.user.username }}</button>
-                                    </form>
-                                    <form method="post" action="{{ path('app_tournament_match_result', {'id': tournament.id, 'matchId': match.id}) }}">
-                                        <input type="hidden" name="winner_id" value="{{ match.participant2.id }}">
-                                        <button class="button" type="submit">{{ match.participant2.user.username }}</button>
-                                    </form>
-                                </div>
+                                <div class="winner-label">Ganador: {{ match.winner.user.username }}</div>
+                            {% else %}
+                                {% if app.user and (tournament.organizer and app.user.id == tournament.organizer.id or is_granted('ROLE_ADMIN')) and match.participant1 and match.participant2 %}
+                                    <div class="match-actions" style="border-top:1px solid #2a2a3a; margin-top:8px; padding-top:8px; display:flex; gap:8px;">
+                                        <form method="post" action="{{ path('app_tournament_match_result', {'id': tournament.id, 'matchId': match.id}) }}" style="margin:0;">
+                                            <input type="hidden" name="winner_id" value="{{ match.participant1.id }}">
+                                            <button class="button" type="submit">Gana {{ match.participant1.user.username }}</button>
+                                        </form>
+                                        <form method="post" action="{{ path('app_tournament_match_result', {'id': tournament.id, 'matchId': match.id}) }}" style="margin:0;">
+                                            <input type="hidden" name="winner_id" value="{{ match.participant2.id }}">
+                                            <button class="button" type="submit">Gana {{ match.participant2.user.username }}</button>
+                                        </form>
+                                    </div>
+                                {% endif %}
                             {% endif %}
                         </div>
                     {% endfor %}
@@ -71,7 +118,7 @@
                             const dx = Math.abs(endX - startX) * 0.5;
                             const d = `M ${startX} ${startY} C ${startX + dx} ${startY} ${endX - dx} ${endY} ${endX} ${endY}`;
                             path.setAttribute('d', d);
-                            path.setAttribute('stroke', '#999');
+                            path.setAttribute('stroke', '#2a2a3a');
                             path.setAttribute('fill', 'none');
                             path.setAttribute('stroke-width', '2');
                             svg.appendChild(path);

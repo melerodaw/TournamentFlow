@@ -30,9 +30,19 @@ final class BracketController extends AbstractController
 
         ksort($groups);
 
+        // build human friendly round labels (use stored round name when available)
+        $roundLabels = [];
+        $totalRounds = count($groups);
+        foreach ($groups as $roundNumber => $matchesInRound) {
+            $firstMatch = $matchesInRound[0] ?? null;
+            $storedName = $firstMatch && $firstMatch->getRound() ? $firstMatch->getRound()->getName() : null;
+            $roundLabels[$roundNumber] = $storedName ?: $this->displayRoundLabel($totalRounds, $roundNumber);
+        }
+
         return $this->render('tournament/bracket.html.twig', [
             'tournament' => $tournament,
             'rounds' => $groups,
+            'round_labels' => $roundLabels,
         ]);
     }
 
@@ -229,8 +239,25 @@ final class BracketController extends AbstractController
         return match ($roundsRemaining) {
             1 => 'Final',
             2 => 'Semifinales',
-            3 => 'Cuartos',
-            4 => 'Octavos',
+            3 => 'Cuartos de final',
+            4 => 'Octavos de final',
+            5 => 'Dieciseisavos de final',
+            6 => 'Treintaidosavos de final',
+            default => 'Ronda ' . $roundNumber,
+        };
+    }
+
+    private function displayRoundLabel(int $totalRounds, int $roundNumber): string
+    {
+        $roundsRemaining = $totalRounds - $roundNumber + 1;
+
+        return match ($roundsRemaining) {
+            1 => 'Final',
+            2 => 'Semifinales',
+            3 => 'Cuartos de final',
+            4 => 'Octavos de final',
+            5 => 'Dieciseisavos de final',
+            6 => 'Treintaidosavos de final',
             default => 'Ronda ' . $roundNumber,
         };
     }

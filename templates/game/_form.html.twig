@@ -1,0 +1,33 @@
+{{ form_start(form, { attr: { class: 'form-grid', id: 'game-form' } }) }}
+    <input type="hidden" name="rawg_id" id="rawg-id-field" value="{{ game.rawgId is not null ? game.rawgId : '' }}">
+
+    <div class="form-field">
+        {{ form_label(form.name) }}
+        {{ form_widget(form.name) }}
+        {{ form_errors(form.name) }}
+    </div>
+
+    <div class="form-field">
+        {{ form_label(form.description) }}
+        {{ form_widget(form.description) }}
+        {{ form_errors(form.description) }}
+    </div>
+
+    <div class="form-field">
+        <label>Imagen seleccionada</label>
+        <div class="game-image-preview">
+            <img id="game-image-preview" src="/{{ game.imagePath ?: 'images/games/placeholder.svg' }}" alt="{{ game.name is not empty ? game.name : 'Vista previa del juego' }}">
+            <div class="game-image-preview__hint" id="game-image-preview-hint">
+                Selecciona un juego de RAWG o sube una imagen manualmente.
+            </div>
+        </div>
+    </div>
+
+    <div class="form-field">
+        {{ form_label(form.imageFile) }}
+        {{ form_widget(form.imageFile) }}
+        {{ form_errors(form.imageFile) }}
+    </div>
+
+    <button class="button primary" type="submit">{{ button_label|default('Guardar') }}</button>
+{{ form_end(form) }}

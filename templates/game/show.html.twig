@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Detalle de juego | TournamentFlow{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <h1 class="title">{{ game.name }}</h1>
+        <div class="detail-visual">
+            <img src="/{{ game.imagePath ?: 'images/games/placeholder.svg' }}" alt="{{ game.name }}">
+        </div>
+
+        {% if game.description %}
+            <p class="subtitle">{{ game.description }}</p>
+        {% endif %}
+
+        <div class="actions-row">
+            <a class="button ghost" href="{{ path('app_game_index') }}">Volver</a>
+            {% if is_granted('ROLE_ADMIN') %}
+                <a class="button primary" href="{{ path('app_game_edit', {'id': game.id}) }}">Editar</a>
+                {{ include('game/_delete_form.html.twig') }}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

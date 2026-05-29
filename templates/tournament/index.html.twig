@@ -1,0 +1,195 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Torneos | TournamentFlow{% endblock %}
+
+{% block body %}
+    {% set format_labels = {
+        'single_elim': 'Eliminacion simple',
+        'swiss': 'Suizo',
+        'round_robin': 'Round robin'
+    } %}
+    {% set status_labels = {
+        'draft': 'Borrador',
+        'open': 'Abierto',
+        'running': 'En curso',
+        'completed': 'Finalizado',
+        'canceled': 'Cancelado'
+    } %}
+
+    <div class="card">
+        {% if active_tab == 'mine' %}
+            <div class="breadcrumbs">
+                <a href="{{ path('app_home') }}">Inicio</a>
+                <span class="crumb-sep">&gt;</span>
+                <span>Mis Torneos</span>
+            </div>
+        {% endif %}
+
+        <div class="list-header">
+            <div>
+                <h1 class="title">{{ section_title|default('Torneos') }}</h1>
+                <p class="subtitle">{{ section_subtitle|default('Gestiona tus brackets y estados desde un solo lugar.') }}</p>
+            </div>
+            <a class="button primary" href="{{ path('app_tournament_new') }}">Crear torneo</a>
+        </div>
+
+        <div class="section-tabs">
+            <a class="nav-pill" href="{{ path('app_tournament_index') }}" aria-current="{{ active_tab == 'all' ? 'page' : 'false' }}">Todos los torneos</a>
+            <a class="nav-pill" href="{{ path('app_tournament_mine') }}" aria-current="{{ active_tab == 'mine' ? 'page' : 'false' }}">Mis torneos</a>
+        </div>
+
+        {% if active_tab == 'all' %}
+            <form class="filters-form" method="get" action="{{ path('app_tournament_index') }}">
+                <div class="form-field">
+                    <label for="filter_q">Buscar por nombre</label>
+                    <input id="filter_q" type="text" name="q" value="{{ filters.q|default('') }}" placeholder="Ej: Liga Summer Clash">
+                </div>
+                <div class="form-field">
+                    <label for="filter_game">Juego</label>
+                    <select id="filter_game" name="game_id">
+                        <option value="0">Todos</option>
+                        {% for game in games|default([]) %}
+                            <option value="{{ game.id }}" {{ filters.game_id|default(0) == game.id ? 'selected' : '' }}>{{ game.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="filter_state">Estado</label>
+                    <select id="filter_state" name="state">
+                        <option value="">Todos</option>
+                        <option value="abierto" {{ filters.state|default('') == 'abierto' ? 'selected' : '' }}>Abierto</option>
+                        <option value="lleno" {{ filters.state|default('') == 'lleno' ? 'selected' : '' }}>Lleno</option>
+                        <option value="finalizado" {{ filters.state|default('') == 'finalizado' ? 'selected' : '' }}>Finalizado</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="filter_slots">Plazas</label>
+                    <select id="filter_slots" name="slots">
+                        <option value="">Todas</option>
+                        <option value="with_slots" {{ filters.slots|default('') == 'with_slots' ? 'selected' : '' }}>Con plazas</option>
+                        <option value="without_slots" {{ filters.slots|default('') == 'without_slots' ? 'selected' : '' }}>Sin plazas</option>
+                    </select>
+                </div>
+                <button type="submit" class="button primary">Aplicar</button>
+            </form>
+        {% endif %}
+
+        {% if active_tab == 'mine' %}
+            {% set has_created = created_tournaments is defined and created_tournaments is not empty %}
+            {% set has_joined = joined_participations is defined and joined_participations is not empty %}
+
+            {% if not has_created and not has_joined %}
+                <p class="subtitle">Aún no has creado torneos ni te has inscrito en ninguno. Explora la comunidad y encuentra uno para empezar.</p>
+                <a class="button primary" href="{{ path('app_tournament_index') }}">Explorar torneos</a>
+            {% else %}
+                {% if has_created %}
+                    <h2 class="title" style="font-size: 24px; margin-top: 0;">Torneos que he creado</h2>
+                    <div class="catalog-grid" style="margin-bottom: 24px;">
+                        {% for tournament in created_tournaments %}
+                            {% set meta = tournament_meta[tournament.id]|default({'participant_count': 0, 'status_label': 'Abierto', 'status_class': 'status-pill status-open'}) %}
+                            <div class="list-item">
+                                <div>
+                                    <div class="list-title">{{ tournament.name }}</div>
+                                    <div class="meta">{{ format_labels[tournament.format]|default(tournament.format) }} · {{ tournament.startAt ? tournament.startAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                                    <div class="meta">Cierre de inscripción: {{ tournament.registrationDeadlineAt ? tournament.registrationDeadlineAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                                    <div class="meta">{{ meta.participant_count }} inscritos</div>
+                                    <div style="margin-top: 12px;">
+                                        <span class="{{ meta.status_class }}">{{ meta.status_label }}</span>
+                                    </div>
+                                </div>
+                                <div class="actions-row">
+                                    <a class="button ghost" href="{{ path('app_tournament_show', {'id': tournament.id}) }}">Ver</a>
+                                    <a class="button primary" href="{{ path('app_tournament_edit', {'id': tournament.id}) }}">Editar</a>
+                                    {{ include('tournament/_delete_form.html.twig') }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if has_joined %}
+                    <h2 class="title" style="font-size: 24px; margin-top: 0;">Torneos en los que estoy inscrito</h2>
+                    <div class="catalog-grid">
+                        {% for participation in joined_participations %}
+                            {% set tournament = participation.tournament %}
+                            {% set meta = tournament_meta[tournament.id]|default({'participant_count': 0, 'status_label': 'Abierto', 'status_class': 'status-pill status-open'}) %}
+                            <div class="list-item">
+                                <div>
+                                    <div class="list-title">{{ tournament.name }}</div>
+                                    <div class="meta">{{ format_labels[tournament.format]|default(tournament.format) }} · {{ tournament.startAt ? tournament.startAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                                    <div class="meta">Cierre de inscripción: {{ tournament.registrationDeadlineAt ? tournament.registrationDeadlineAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                                    <div class="meta">Creador: {{ tournament.organizer.username }}</div>
+                                    <div style="margin-top: 12px;">
+                                        <span class="{{ meta.status_class }}">{{ meta.status_label }}</span>
+                                    </div>
+                                </div>
+                                <div class="actions-row">
+                                    <a class="button ghost" href="{{ path('app_tournament_show', {'id': tournament.id}) }}">Ver</a>
+                                    <form method="post" action="{{ path('app_tournament_leave', {'id': tournament.id}) }}" onsubmit="return confirm('Seguro que deseas abandonar este torneo?');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('leave' ~ tournament.id) }}">
+                                        <button class="button ghost" type="submit">Abandonar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% elseif tournaments is empty %}
+            <p class="subtitle">No hay torneos para mostrar.</p>
+        {% else %}
+            <div class="catalog-grid">
+                {% for tournament in tournaments %}
+                    {% set meta = tournament_meta[tournament.id]|default({'participant_count': 0, 'status_label': 'Abierto', 'status_class': 'status-pill status-open'}) %}
+                    {% set is_full = meta.status == 'lleno' or meta.participant_count >= tournament.maxParticipants %}
+                    <article class="list-item with-image{{ tournament.status == 'cancelled' ? ' is-cancelled' : '' }}">
+                        <a class="card-link" href="{{ path('app_tournament_show', {'id': tournament.id}) }}">
+                            <div class="card-media">
+                                {% if tournament.game and tournament.game.imagePath %}
+                                    <img class="card-image" src="/{{ tournament.game.imagePath }}" alt="{{ tournament.game.name }}">
+                                {% else %}
+                                    <div class="card-placeholder">
+                                        <span>{{ tournament.game ? tournament.game.name : 'Sin juego' }}</span>
+                                    </div>
+                                {% endif %}
+
+                                {% if tournament.status == 'finished' %}
+                                    <span class="card-badge card-badge--finished">FINALIZADO</span>
+                                {% elseif tournament.status == 'cancelled' %}
+                                    <span class="card-badge card-badge--cancelled">CANCELADO</span>
+                                {% elseif is_full %}
+                                    <span class="card-badge">LLENO</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="content">
+                                <div class="list-title">{{ tournament.name }}</div>
+                                {% if tournament.status == 'finished' and tournament.champion %}
+                                    <div class="meta">🏆 Ganador: {{ tournament.champion.user.username }}</div>
+                                {% endif %}
+                                <div class="meta">
+                                    {{ format_labels[tournament.format]|default(tournament.format) }}
+                                    · {{ tournament.game ? tournament.game.name : 'Sin juego' }}
+                                </div>
+                                <div class="meta">Inscripción hasta: {{ tournament.registrationDeadlineAt ? tournament.registrationDeadlineAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                                <div class="meta">Inicio: {{ tournament.startAt ? tournament.startAt|date('d M Y H:i') : 'Sin fecha' }}</div>
+                            </div>
+                        </a>
+
+                        <div class="actions-wrapper">
+                            <span class="{{ is_full ? 'status-pill status-full' : meta.status_class }}">{{ is_full ? 'LLENO' : meta.status_label }}</span>
+                            <span class="chip">{{ meta.participant_count }}/{{ tournament.maxParticipants }} inscritos</span>
+                            {% if tournament.status in ['in_progress', 'finished'] %}
+                                {% if tournament.format == 'swiss' %}
+                                    <a class="button ghost" href="{{ path('app_tournament_swiss_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                                {% else %}
+                                    <a class="button ghost" href="{{ path('app_tournament_bracket', {'id': tournament.id}) }}">Ver bracket</a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

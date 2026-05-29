@@ -1,0 +1,276 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nuevo juego | TournamentFlow{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .rawg-panel {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .rawg-search-bar {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+        }
+
+        .rawg-search-bar input[type="search"] {
+            width: 100%;
+            min-height: 48px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--ink);
+            padding: 12px 14px;
+            font: inherit;
+        }
+
+        .rawg-search-bar input[type="search"]::placeholder {
+            color: var(--muted);
+        }
+
+        .rawg-results {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .rawg-card {
+            text-align: left;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .rawg-card:hover,
+        .rawg-card.is-selected {
+            transform: translateY(-2px);
+            border-color: rgba(124, 58, 237, 0.55);
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+        }
+
+        .rawg-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 14px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .rawg-card-title {
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .rawg-card-genres,
+        .rawg-status {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .game-image-preview {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px dashed rgba(148, 163, 184, 0.35);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .game-image-preview img {
+            width: 100%;
+            max-width: 360px;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .game-image-preview__hint {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            .rawg-results {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 700px) {
+            .rawg-search-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .rawg-results {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <h1 class="title">Nuevo juego</h1>
+        <p class="subtitle">Busca en RAWG para importar un juego con imagen, géneros y descripción.</p>
+
+        <section class="rawg-panel">
+            <div class="rawg-search-bar">
+                <input type="search" id="rawg-query" class="input" placeholder="Busca un juego..." autocomplete="off">
+                <button type="button" class="button primary" id="rawg-search-button">Buscar</button>
+            </div>
+            <div class="rawg-status" id="rawg-status">Escribe un nombre y pulsa Buscar.</div>
+            <div class="rawg-results" id="rawg-results"></div>
+        </section>
+
+        {{ include('game/_form.html.twig') }}
+
+        <div class="actions-row">
+            <a class="button ghost" href="{{ path('app_game_index') }}">Volver</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const searchUrl = '{{ path('app_game_search_rawg') }}';
+            const queryInput = document.getElementById('rawg-query');
+            const searchButton = document.getElementById('rawg-search-button');
+            const results = document.getElementById('rawg-results');
+            const status = document.getElementById('rawg-status');
+            const rawgIdField = document.getElementById('rawg-id-field');
+            const nameField = document.getElementById('game_name');
+            const descriptionField = document.getElementById('game_description');
+            const previewImage = document.getElementById('game-image-preview');
+            const previewHint = document.getElementById('game-image-preview-hint');
+            const placeholder = '/images/games/placeholder.svg';
+
+            if (!queryInput || !searchButton || !results || !status || !rawgIdField || !nameField || !descriptionField || !previewImage || !previewHint) {
+                return;
+            }
+
+            const setLoading = (loading) => {
+                searchButton.disabled = loading;
+                searchButton.textContent = loading ? 'Buscando...' : 'Buscar';
+            };
+
+            const sanitizeText = (value) => (value || '').replace(/\s+/g, ' ').trim();
+
+            const truncate = (value, maxLength) => {
+                const text = sanitizeText(value);
+                return text.length > maxLength ? `${text.slice(0, maxLength).trim()}...` : text;
+            };
+
+            const selectGame = (game, card) => {
+                rawgIdField.value = game.id ?? '';
+                nameField.value = game.name || '';
+                descriptionField.value = truncate(game.description_raw || '', 300);
+                previewImage.src = game.background_image || placeholder;
+                previewImage.alt = game.name || 'Vista previa del juego';
+                previewHint.textContent = game.background_image
+                    ? 'Juego importado desde RAWG. Puedes seguir editando antes de guardar.'
+                    : 'RAWG no devolvió imagen. Puedes subir una manualmente si lo necesitas.';
+
+                document.querySelectorAll('.rawg-card.is-selected').forEach((selectedCard) => {
+                    selectedCard.classList.remove('is-selected');
+                });
+                if (card) {
+                    card.classList.add('is-selected');
+                }
+            };
+
+            const renderResults = (items) => {
+                results.innerHTML = '';
+
+                if (!items.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'rawg-status';
+                    empty.textContent = 'No se encontraron juegos.';
+                    results.appendChild(empty);
+                    return;
+                }
+
+                items.forEach((game) => {
+                    const card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'rawg-card';
+                    const image = document.createElement('img');
+                    image.src = game.background_image || placeholder;
+                    image.alt = game.name || 'Juego';
+
+                    const title = document.createElement('div');
+                    title.className = 'rawg-card-title';
+                    title.textContent = game.name || 'Sin nombre';
+
+                    const genres = document.createElement('div');
+                    genres.className = 'rawg-card-genres';
+                    genres.textContent = (game.genres || []).join(' · ') || 'Sin géneros';
+
+                    card.append(image, title, genres);
+                    card.addEventListener('click', () => selectGame(game, card));
+                    results.appendChild(card);
+                });
+            };
+
+            const searchGames = async () => {
+                const query = queryInput.value.trim();
+                if (!query) {
+                    status.textContent = 'Escribe un nombre y pulsa Buscar.';
+                    results.innerHTML = '';
+                    return;
+                }
+
+                setLoading(true);
+                status.textContent = 'Buscando en RAWG...';
+
+                try {
+                    const response = await fetch(`${searchUrl}?q=${encodeURIComponent(query)}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                    });
+                    const payload = await response.json();
+
+                    if (payload.message) {
+                        status.textContent = payload.message;
+                    } else {
+                        status.textContent = `Resultados para "${query}"`;
+                    }
+
+                    renderResults(payload.results || []);
+                } catch (error) {
+                    status.textContent = 'No se pudo conectar con RAWG.';
+                    results.innerHTML = '<div class="rawg-status">Sin resultados.</div>';
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            searchButton.addEventListener('click', searchGames);
+            queryInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    searchGames();
+                }
+            });
+
+            if (previewImage && previewImage.src.endsWith(placeholder)) {
+                previewHint.textContent = 'Selecciona un juego de RAWG o sube una imagen manualmente.';
+            }
+        });
+    </script>
+{% endblock %}

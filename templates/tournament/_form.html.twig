@@ -1,0 +1,66 @@
+{{ form_start(form, { attr: { class: 'form-grid' } }) }}
+    <div class="form-field">
+        {{ form_label(form.name) }}
+        {{ form_widget(form.name) }}
+        {{ form_errors(form.name) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.description) }}
+        {{ form_widget(form.description) }}
+        {{ form_errors(form.description) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.game) }}
+        {{ form_widget(form.game) }}
+        {{ form_errors(form.game) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.format) }}
+        {{ form_widget(form.format) }}
+        {{ form_errors(form.format) }}
+    </div>
+    <div class="form-field" id="swiss-rounds-field" style="display:none;">
+        {{ form_label(form.swissRounds) }}
+        {{ form_widget(form.swissRounds) }}
+        {{ form_errors(form.swissRounds) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.maxParticipants) }}
+        {{ form_widget(form.maxParticipants) }}
+        {{ form_errors(form.maxParticipants) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.startAt) }}
+        {{ form_widget(form.startAt) }}
+        {{ form_errors(form.startAt) }}
+    </div>
+    <div class="form-field">
+        {{ form_label(form.registrationDeadlineAt) }}
+        {{ form_widget(form.registrationDeadlineAt) }}
+        {{ form_errors(form.registrationDeadlineAt) }}
+    </div>
+
+    <button class="button primary" type="submit">{{ button_label|default('Guardar') }}</button>
+{{ form_end(form) }}
+
+<script>
+    (function () {
+        const formatSelect = document.querySelector('[name$="[format]"]');
+        const swissField = document.getElementById('swiss-rounds-field');
+
+        function update() {
+            if (!formatSelect) return;
+            const val = formatSelect.value;
+            if (val === 'swiss') {
+                swissField.style.display = 'block';
+            } else {
+                swissField.style.display = 'none';
+            }
+        }
+
+        update();
+        if (formatSelect) {
+            formatSelect.addEventListener('change', update);
+        }
+    })();
+</script>

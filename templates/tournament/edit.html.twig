@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Editar torneo | TournamentFlow{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <h1 class="title">Editar torneo</h1>
+        <p class="subtitle">Ajusta formatos, fechas o estado.</p>
+
+        {{ include('tournament/_form.html.twig', {'button_label': 'Actualizar'}) }}
+
+        <div class="actions-row">
+            <a class="button ghost" href="{{ path('app_tournament_index') }}">Volver</a>
+            {{ include('tournament/_delete_form.html.twig') }}
+        </div>
+    </div>
+{% endblock %}

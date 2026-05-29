@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nuevo torneo | TournamentFlow{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <h1 class="title">Nuevo torneo</h1>
+        <p class="subtitle">Completa los datos base para abrir inscripciones.</p>
+
+        {{ include('tournament/_form.html.twig') }}
+
+        <div class="actions-row">
+            <a class="button ghost" href="{{ path('app_tournament_index') }}">Volver</a>
+        </div>
+    </div>
+{% endblock %}

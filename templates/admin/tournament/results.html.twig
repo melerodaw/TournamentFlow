@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Resultados del bracket | TournamentFlow{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <div class="breadcrumbs">
+            <a href="{{ path('app_home') }}">Inicio</a>
+            <span class="crumb-sep">&gt;</span>
+            <a href="{{ path('app_tournament_index') }}">Torneos</a>
+            <span class="crumb-sep">&gt;</span>
+            <span>Resultados</span>
+        </div>
+
+        <h1 class="title">Resultados del bracket</h1>
+        <p class="subtitle">{{ tournament.name }}</p>
+
+        {% for number, matches in rounds %}
+            <div class="list" style="margin-bottom: 24px;">
+                <h2 class="title" style="font-size: 22px;">Ronda {{ number }}</h2>
+                {% for match in matches %}
+                    <div class="list-item">
+                        <div>
+                            <div class="list-title">Partido {{ match.id }}</div>
+                            <div class="meta">
+                                {{ match.participant1 ? match.participant1.user.username : 'Por determinar' }}
+                                vs
+                                {{ match.participant2 ? match.participant2.user.username : 'Por determinar' }}
+                            </div>
+                            {% if match.winner %}
+                                <div class="meta" style="margin-top: 8px;">Ganador: {{ match.winner.user.username }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="actions-row">
+                            {% if not match.winner and match.participant1 and match.participant2 %}
+                                <form method="post" action="{{ path('app_tournament_match_result', {'id': tournament.id, 'matchId': match.id}) }}">
+                                    <input type="hidden" name="winner_id" value="{{ match.participant1.id }}">
+                                    <button class="button" type="submit">Gana {{ match.participant1.user.username }}</button>
+                                </form>
+                                <form method="post" action="{{ path('app_tournament_match_result', {'id': tournament.id, 'matchId': match.id}) }}">
+                                    <input type="hidden" name="winner_id" value="{{ match.participant2.id }}">
+                                    <button class="button" type="submit">Gana {{ match.participant2.user.username }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

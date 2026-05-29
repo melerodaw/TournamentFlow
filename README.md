@@ -1,57 +1,54 @@
 # TournamentFlow
 
-Plataforma para gestionar torneos 1v1 (eliminacion simple ahora, suizo/round robin mas adelante).
-Construido con Symfony y Doctrine, pensado para crecer sin rehacer el modelo.
+Plataforma para crear y gestionar torneos 1v1: creación de torneos, inscripciones, generación de brackets (eliminación directa) y soporte para sistema Suizo.
 
-## Stack
+Resumen (lo que se verá en GitHub)
 
-- Symfony 8
+- Pequeña aplicación web construida con Symfony y Doctrine para gestionar torneos de videojuegos.
+- Permite crear torneos, inscribir participantes, generar brackets y registrar resultados.
+- Integración opcional con la RAWG API para importar datos e imágenes de videojuegos.
+
+Stack (confirmado en el proyecto)
+
+- PHP >= 8.4
+- Symfony 6.4
 - Doctrine ORM
-- PostgreSQL (recomendado)
+- Base de datos: configurable vía `DATABASE_URL` (PostgreSQL recomendado)
 
-## Modelo de dominio (resumen)
+Instalación rápida
 
-- User: cuenta base, organiza y participa en torneos
-- Game: juego del torneo
-- Tournament: torneo, formato y estado
-- Participant: inscripcion de usuario al torneo
-- TournamentMatch: partido del torneo
-- MatchParticipant: slots 1/2 con score y ganador
+1. Clonar el repo y entrar al directorio:
 
-## Requisitos
+   git clone <repo-url>
+   cd TournamentFlow
 
-- PHP 8.5+
-- Composer 2.x
-- PostgreSQL 16+ (o Docker)
+2. Instalar dependencias:
 
-## Instalacion rapida
+   composer install
 
-1. Instalar dependencias:
-   - `composer install`
-2. Configurar la base de datos (ver seccion "Base de datos")
-3. Crear migraciones y tablas:
-   - `php bin/console make:migration`
-   - `php bin/console doctrine:migrations:migrate`
-4. Levantar el servidor de desarrollo:
-   - `php -S localhost:8000 -t public`
+3. Configurar variables de entorno (`.env.local`):
 
-## Base de datos
+   - `DATABASE_URL` (ej: PostgreSQL)
+   - `APP_SECRET`
+   - `RAWG_API_KEY` (opcional, para importar juegos desde RAWG)
 
-La conexion se configura con `DATABASE_URL` en `.env` o mejor en `.env.local`.
-Ejemplo con PostgreSQL local:
+4. Ejecutar migraciones:
 
-`DATABASE_URL="postgresql://app:TuPassword@127.0.0.1:5432/app?serverVersion=16&charset=utf8"`
+   php bin/console doctrine:migrations:migrate
 
-Si prefieres Docker, puedes usar `compose.yaml`:
+5. Crear usuario administrador (comando proporcionado):
 
-- `docker compose up -d`
+   php bin/console app:create-admin
 
-## Comandos utiles
+Comandos útiles
 
-- Ver entidades mapeadas: `php bin/console doctrine:mapping:info`
-- Crear migracion: `php bin/console make:migration`
-- Ejecutar migraciones: `php bin/console doctrine:migrations:migrate`
+- `php bin/console doctrine:mapping:info` — listar entidades mapeadas.
+- `php bin/console make:migration` — generar migración.
+- `php bin/console doctrine:migrations:migrate` — aplicar migraciones.
 
-## Notas
+Notas
 
-- El modelo esta preparado para soportar equipos en el futuro sin romper el esquema.
+- La configuración de Doctrine y rutas se encuentra en `config/`.
+- RAWG API se usa desde `src/Service/RawgApiService.php` y el endpoint de búsqueda está en `/admin/juegos/buscar-rawg`.
+- Para desarrollo rápido se incluye `compose.yaml` y `compose.override.yaml`.
+
